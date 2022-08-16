@@ -31,13 +31,7 @@ estimates for all strata relevant to the model variables. For instance,
 in a model that uses race-ethnicity (four categories) and biological sex
 (two categories), there are 8 different
 ![(8 = 4 \\times 2)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;%288%20%3D%204%20%5Ctimes%202%29 "(8 = 4 \times 2)")
-possible combinations (strata) of demographic variables. To make a
-single estimate for each small area, rather than as many estimates as
-strata per small area, poststratification recommends multiplying the
-estimates for each stratum by the number of children per stratum in each
-small area (i.e., population counts) and dividing the results by the
-number of children in that small area, whic results in a single small
-area estimate that reflected each small area’s demographic make-up. The
+possible combinations (strata) of demographic variables. Poststratification combines the strata specific estimates into a single estimate via a weighted sum.  Specifically, each strata specific estimate is multiplied by the number of children the small area has in the strata (i.e., population counts) and divided by the total number of children in that small area. This results in a single small area estimate that reflects each small area’s demographic make-up. The
 R code file `code_poststratification_ts.R` carries out the
 poststratification process. The files containing counts to create
 poststratification weights are `2016_ts_county_n.csv`,
