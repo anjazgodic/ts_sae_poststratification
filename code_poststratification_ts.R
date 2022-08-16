@@ -16,9 +16,8 @@ library(survey)
 #######DO MANIPULATIONS##########
 #################################
 
-#front <- "C:/Users/azgodic/"
-front <- "~/Desktop/"
 # Read in a file connecting the fips number with the state name so that I can identify states
+front <- "~/Desktop/"
 fipsst <- read.csv(paste0(front, "FIPSST.csv"))
 names(fipsst)[1] <- "fipsst"
 fipsst <- fipsst[order(fipsst$fipsst),]
@@ -28,20 +27,25 @@ ps_count_2016 <- read.csv(paste0(front, "2016_ts_county_n.csv"))[,-1]
 ps_count_2017 <- read.csv(paste0(front, "2017_ts_county_n.csv"))[,-1]
 ps_count_2018 <- read.csv(paste0(front, "2018_ts_county_n.csv"))[,-1]
 
+# Exclude ages we do not need 
 ps_count_2016 <- ps_count_2016[ps_count_2016$age!=5,]
 ps_count_2017 <- ps_count_2017[ps_count_2017$age!=5,]
 ps_count_2018 <- ps_count_2018[ps_count_2018$age!=5,]
 
+# There is a FIPS number that changed recently, we fix that there
 ps_count_2016$fips[ps_count_2016$fips==2158] <- 2270
 ps_count_2017$fips[ps_count_2017$fips==2158] <- 2270
 ps_count_2018$fips[ps_count_2018$fips==2158] <- 2270
 
+# We create a group variable to make it easier to do the group_by command later
 ps_count_2016$group <- paste0(ps_count_2016$RACESEX, "_" , ps_count_2016$age)
 ps_count_2017$group <- paste0(ps_count_2017$RACESEX, "_" , ps_count_2017$age)
 ps_count_2018$group <- paste0(ps_count_2018$RACESEX, "_" , ps_count_2018$age)
 
+# We delete some variables we no longer need (since we have the new group variable)
 ps_count_2016[, c("race4", "age", "RACESEX")] = ps_count_2017[, c("race4", "age", "RACESEX")] = ps_count_2018[, c("race4", "age", "RACESEX")] <- NULL
 
+# For each county, sum all the children in a given group
 ps_count_2016 <- ps_count_2016 %>% group_by(fips, group) %>% summarize(county_n = sum(county_n))
 ps_count_2016 <- data.frame(ps_count_2016)
 ps_count_2017 <- ps_count_2017 %>% group_by(fips, group) %>% summarize(county_n = sum(county_n))
@@ -49,21 +53,25 @@ ps_count_2017 <- data.frame(ps_count_2017)
 ps_count_2018 <- ps_count_2018 %>% group_by(fips, group) %>% summarize(county_n = sum(county_n))
 ps_count_2018 <- data.frame(ps_count_2018)
 
+# Read in some fips numbers we will need
 fips <- read.csv(paste0(front, "/fips_to_county.csv"))
 
+# Make group variable factor to use the spread command
 ps_count_2016$group <- factor(ps_count_2016$group)
 ps_count_2017$group <- factor(ps_count_2017$group)
 ps_count_2018$group <- factor(ps_count_2018$group)
 
+# Make the dataset from long format into wide format
 ps_count_2016 <- spread(ps_count_2016, group, county_n)
 ps_count_2017 <- spread(ps_count_2017, group, county_n)
 ps_count_2018 <- spread(ps_count_2018, group, county_n)
 
-ps_count_2016 <- rbind(ps_count_2016, c(51515, rep(1, 2)))
-ps_count_2017 <- rbind(ps_count_2017, c(51515, rep(1, 2)))
-ps_count_2018 <- rbind(ps_count_2018, c(51515, rep(1, 2)))
+# Add a missing county with a count of 1 child per group, it will be averaged at the state level
+ps_count_2016 <- rbind(ps_count_2016, c(51515, rep(1, ncol(ps_count_2016)-1)))
+ps_count_2017 <- rbind(ps_count_2017, c(51515, rep(1, ncol(ps_count_2017)-1)))
+ps_count_2018 <- rbind(ps_count_2018, c(51515, rep(1, ncol(ps_count_2018)-1)))
 
-# Order matrix based on how variables appear in the model
+# Order matrix based on how variables appear in the model output csv files
 column_order <- c("fips", "female_6", "male_6", "female_7", "male_7", 
                   "female_8", "male_8", "female_9", "male_9", 
                   "female_10",  "male_10", "female_11",  "male_11", 
@@ -71,17 +79,19 @@ column_order <- c("fips", "female_6", "male_6", "female_7", "male_7",
                   "female_14", "male_14", "female_15", "male_15", 
                   "female_16",  "male_16", "female_17", "male_17")
 
+# Order matrix based on how variables appear in the model output csv files
 ps_count_2016 <- ps_count_2016[,column_order]
 ps_count_2017 <- ps_count_2017[,column_order]
 ps_count_2018 <- ps_count_2018[,column_order]
 
+# Order rows by FIPS number and create a dataframe of counts for years 2019 and 2020 based on 2018
 ps_count_2016 <- ps_count_2016[order(ps_count_2016$fips), ]
 ps_count_2017 <- ps_count_2017[order(ps_count_2017$fips), ]
 ps_count_2018 <- ps_count_2018[order(ps_count_2018$fips), ]
 ps_count_2019 <- ps_count_2018
 ps_count_2020 <- ps_count_2018
 
-# Create matrix P_ts of poststratifiation weights 
+# Put together matrix P_ts of poststratifiation counts based on previous data frames of countys
 P_ts <- c()
 for(i in c("ps_count_2016", "ps_count_2017", "ps_count_2018", "ps_count_2019", "ps_count_2020")){
   for(j in column_order[-1]){
@@ -93,12 +103,14 @@ for(i in c("ps_count_2016", "ps_count_2017", "ps_count_2018", "ps_count_2019", "
 P_ts <- data.frame(P_ts)
 names(P_ts) <- c(t(outer(column_order[-1], c("_2016", "_2017", "_2018", "_2019", "_2020"), FUN=paste0)))
 
+# Order and clean FIPS numbers in matrix P_ts of poststratifiation counts
 P_ts <- data.frame(ps_count_2016[,"fips"], P_ts)
 names(P_ts)[1] <- "fips"
 P_ts$fips <- as.character(P_ts$fips)
 P_ts$fips <- str_pad(P_ts$fips, 5, pad = "0")
 P_ts$fips <- substr(P_ts$fips , start = 1, stop = 2)
 
+# Use matrix P_ts of poststratifiation counts and divide by state counts to get the final matrix P_ts of poststratifiation weights
 P_ts <- P_ts %>% group_by(fips) %>% summarise_all(sum)
 P_ts$state_sums <- rowSums(P_ts[,-1])
 for(i in 2:(ncol(P_ts)-1)){

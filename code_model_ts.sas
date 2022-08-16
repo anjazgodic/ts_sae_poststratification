@@ -29,6 +29,27 @@ proc glimmix data=nsch method=QUAD;
  random intercept/subject = FIPSST s;
  covtest indep;
  output out=out_data pred(ILINK)=phat STDERR(ILINK)=stderr pred(NOBLUP ILINK)=phat2 STDERR(NOBLUP ILINK)=stderr2;
+ ods output ParameterEstimates = fixed_effects_estimates;
+ ods output CovB = fixed_effects_covariance;
+ ods output SolutionR = random_effects_estimates;
+run;
+
+proc export data=fixed_effects_estimates
+     outfile="fixed_effects_estimates.csv"
+     dbms=csv 
+     replace;
+run;
+
+proc export data=fixed_effects_covariance
+     outfile="fixed_effects_covariance.csv"
+     dbms=csv 
+     replace;
+run;
+
+proc export data=random_effects_estimates
+     outfile="random_effects_estimates.csv"
+     dbms=csv 
+     replace;
 run;
 
 ********************************************************************
@@ -41,7 +62,26 @@ proc glimmix data=nsch method=QUAD;
  random intercept/subject = FIPSST s;
  covtest indep;
  output out=out_data pred(ILINK)=phat STDERR(ILINK)=stderr pred(NOBLUP ILINK)=phat2 STDERR(NOBLUP ILINK)=stderr2;
+ ods output ParameterEstimates = fixed_effects_estimates;
+ ods output CovB = fixed_effects_covariance;
+ ods output SolutionR = random_effects_estimates;
 run;
 
+proc export data=fixed_effects_estimates
+     outfile="fixed_effects_estimates.csv"
+     dbms=csv 
+     replace;
+run;
 
+proc export data=fixed_effects_covariance
+     outfile="fixed_effects_covariance.csv"
+     dbms=csv 
+     replace;
+run;
+
+proc export data=random_effects_estimates
+     outfile="random_effects_estimates.csv"
+     dbms=csv 
+     replace;
+run;
 
